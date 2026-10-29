@@ -10,7 +10,7 @@ public class CameraRig : MonoBehaviour
     [SerializeField] private Vector3 center = Vector3.zero;
     [SerializeField] private Vector3 followOffset = new Vector3(0f, 21f, -13f);
     [SerializeField] [Range(0f, 1f)] private float followStrength = 0.45f;
-    [SerializeField] private float baseFov = 48f;
+    [SerializeField] private float baseFov = 52f;
     [SerializeField] private float orbitRadius = 25f;
     [SerializeField] private float orbitHeight = 17f;
     [SerializeField] private float orbitSpeed = 7f;

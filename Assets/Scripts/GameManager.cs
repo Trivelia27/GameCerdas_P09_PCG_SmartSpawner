@@ -219,14 +219,20 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        HandleGlobalInput();
+        // Saat mengetik di kolom seed, tombol R/N/Enter tidak boleh memicu aksi game.
+        bool typing = UIFactory.TextInputFocused();
+
+        if (!typing)
+        {
+            HandleGlobalInput();
+        }
 
         stateTimer += Time.unscaledDeltaTime;
 
         switch (State)
         {
             case GameState.Title:
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                if ((!typing && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))) ||
                     (autoPilot != null && autoPilot.Active && stateTimer > 1f))
                 {
                     StartGame();
@@ -238,7 +244,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.LevelComplete:
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                if ((!typing && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))) ||
                     (autoPilot != null && autoPilot.Active && stateTimer > autoContinueDelay))
                 {
                     NextLevel();
@@ -246,7 +252,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case GameState.GameOver:
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                if (!typing && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
                 {
                     RestartLevel();
                 }

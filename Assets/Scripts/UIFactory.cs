@@ -13,10 +13,40 @@ public static class UIFactory
     public static readonly Color Red = new Color(1f, 0.32f, 0.38f);
     public static readonly Color Green = new Color(0.3f, 1f, 0.5f);
     public static readonly Color Dim = new Color(0.62f, 0.72f, 0.82f);
+    public static readonly Color Magenta = new Color(1f, 0.3f, 0.72f);
 
     private static Sprite rounded;
     private static Sprite circle;
     private static Sprite vignette;
+    private static Sprite outline;
+
+    public static Sprite Outline => outline != null ? outline : outline = MakeOutlineSprite(64, 22, 2);
+
+    private static Sprite MakeOutlineSprite(int size, int radius, int thickness)
+    {
+        Texture2D texture = NewTexture(size);
+        float half = size * 0.5f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = Mathf.Max(Mathf.Abs(x + 0.5f - half) - (half - radius), 0f);
+                float dy = Mathf.Max(Mathf.Abs(y + 0.5f - half) - (half - radius), 0f);
+                float distance = Mathf.Sqrt(dx * dx + dy * dy) - radius;
+
+                float outer = Mathf.Clamp01(0.5f - distance);
+                float inner = Mathf.Clamp01(0.5f - (distance + thickness));
+
+                texture.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(outer - inner)));
+            }
+        }
+
+        texture.Apply();
+
+        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
+            new Vector4(radius, radius, radius, radius));
+    }
 
     public static Sprite Rounded => rounded != null ? rounded : rounded = MakeRoundedSprite(64, 22, true);
     public static Sprite Circle => circle != null ? circle : circle = MakeRoundedSprite(64, 32, false);
@@ -171,10 +201,139 @@ public static class UIFactory
         TextMeshProUGUI text = MakeText(rt, label, fontSize, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
         Stretch(text.rectTransform);
 
+        button.navigation = NoNavigation();
         button.onClick.AddListener(onClick);
         button.onClick.AddListener(() => AudioManager.Play(Sfx.Click));
+        button.onClick.AddListener(ClearSelection);
 
         return button;
+    }
+
+    private static Navigation NoNavigation()
+    {
+        return new Navigation { mode = Navigation.Mode.None };
+    }
+
+    /// <summary>Lepas fokus UI agar Space/Enter/WASD tidak ikut menekan kontrol UI terakhir.</summary>
+    public static void ClearSelection()
+    {
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    public static bool TextInputFocused()
+    {
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
+        {
+            return false;
+        }
+
+        TMP_InputField input = EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>();
+        return input != null && input.isFocused;
+    }
+
+    public static RectTransform MakeCard(Transform parent, string number, string title, Color accent)
+    {
+        RectTransform card = Node(parent, "Card_" + title);
+
+        Image background = card.gameObject.AddComponent<Image>();
+        background.sprite = Rounded;
+        background.type = Image.Type.Sliced;
+        background.color = PanelColor;
+
+        Vertical(card.gameObject, 7f, 18);
+
+        Image border = MakeImage(card, "Border", new Color(accent.r, accent.g, accent.b, 0.55f), Outline, true);
+        Stretch(border.rectTransform);
+        border.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+        RectTransform header = Node(card, "Header");
+        Horizontal(header.gameObject, 10f);
+        Size(header.gameObject, -1f, 34f);
+
+        TextMeshProUGUI numberText = MakeText(header, number, 22f, Magenta, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+        Size(numberText.gameObject, 36f, 34f);
+
+        TextMeshProUGUI titleText = MakeText(header, title, 20f, accent, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+        titleText.characterSpacing = 4f;
+        Size(titleText.gameObject, -1f, 34f, 1f);
+
+        return card;
+    }
+
+    public static Toggle MakeToggle(Transform parent, string label, bool value, UnityAction<bool> onChange, float fontSize = 18f)
+    {
+        RectTransform root = Node(parent, "Toggle");
+        Horizontal(root.gameObject, 10f);
+        Size(root.gameObject, -1f, 26f);
+
+        Image hit = root.gameObject.AddComponent<Image>();
+        hit.color = new Color(0f, 0f, 0f, 0f);
+
+        Toggle toggle = root.gameObject.AddComponent<Toggle>();
+
+        Image box = MakeImage(root, "Box", new Color(1f, 1f, 1f, 0.16f), Rounded, true);
+        Size(box.gameObject, 24f, 24f);
+
+        Image check = MakeImage(box.transform, "Check", Cyan, Rounded, true);
+        Place(check.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(14f, 14f));
+
+        TextMeshProUGUI text = MakeText(root, label, fontSize, Color.white, TextAlignmentOptions.MidlineLeft);
+        Size(text.gameObject, -1f, 24f, 1f);
+
+        toggle.targetGraphic = hit;
+        toggle.graphic = check;
+        toggle.navigation = NoNavigation();
+        toggle.SetIsOnWithoutNotify(value);
+        toggle.onValueChanged.AddListener(onChange);
+        toggle.onValueChanged.AddListener(_ => AudioManager.Play(Sfx.Click));
+        toggle.onValueChanged.AddListener(_ => ClearSelection());
+
+        return toggle;
+    }
+
+    public static TMP_InputField MakeInput(Transform parent, string placeholder, float fontSize)
+    {
+        RectTransform root = Node(parent, "Input");
+
+        Image background = root.gameObject.AddComponent<Image>();
+        background.sprite = Rounded;
+        background.type = Image.Type.Sliced;
+        background.color = new Color(0.02f, 0.03f, 0.06f, 0.95f);
+
+        Image border = MakeImage(root, "Border", new Color(Cyan.r, Cyan.g, Cyan.b, 0.5f), Outline, true);
+        Stretch(border.rectTransform);
+
+        RectTransform area = Node(root, "Text Area");
+        Stretch(area, 10f);
+        area.gameObject.AddComponent<RectMask2D>();
+
+        TextMeshProUGUI text = MakeText(area, "", fontSize, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+        Stretch(text.rectTransform);
+
+        TextMeshProUGUI hint = MakeText(area, placeholder, fontSize, new Color(1f, 1f, 1f, 0.3f), TextAlignmentOptions.MidlineLeft, FontStyles.Italic);
+        Stretch(hint.rectTransform);
+
+        TMP_InputField input = root.gameObject.AddComponent<TMP_InputField>();
+        input.textViewport = area;
+        input.textComponent = text;
+        input.placeholder = hint;
+        input.targetGraphic = background;
+        input.contentType = TMP_InputField.ContentType.IntegerNumber;
+        input.characterLimit = 10;
+        input.navigation = NoNavigation();
+
+        return input;
+    }
+
+    public static RawImage MakeRawImage(Transform parent, string name)
+    {
+        RectTransform rt = Node(parent, name);
+        RawImage image = rt.gameObject.AddComponent<RawImage>();
+        image.raycastTarget = false;
+        return image;
     }
 
     public static Slider MakeSlider(Transform parent, float min, float max, bool whole, float value, UnityAction<float> onChange, Color fillColor)
@@ -214,6 +373,7 @@ public static class UIFactory
         slider.fillRect = fill;
         slider.handleRect = handle;
         slider.targetGraphic = handleImage;
+        slider.navigation = NoNavigation();
         slider.direction = Slider.Direction.LeftToRight;
         slider.minValue = min;
         slider.maxValue = max;

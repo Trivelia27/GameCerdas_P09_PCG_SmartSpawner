@@ -16,7 +16,7 @@ public static class PCGSceneBuilder
     private static Shader litShader;
     private static Shader additiveShader;
 
-    private static Texture2D softDot, ringTex, ringDashTex, beamTex, arrowTex, gridTex, edgeTex;
+    private static Texture2D softDot, ringTex, ringDashTex, beamTex, arrowTex, gridTex, edgeTex, crossTex, whiteTex;
 
     private static readonly Color CyanNeon = new Color(0.25f, 0.9f, 1f);
     private static readonly Color MagentaNeon = new Color(1f, 0.3f, 0.75f);
@@ -46,6 +46,8 @@ public static class PCGSceneBuilder
         Material glowRes = Additive("Assets/Resources/Fx/FxGlow.mat", softDot, new Color(0.5f, 0.5f, 0.5f, 0.5f));
         Additive("Assets/Resources/Fx/FxRing.mat", ringTex, new Color(0.5f, 0.5f, 0.5f, 0.5f));
         Additive("Assets/Resources/Fx/FxRingDash.mat", ringDashTex, new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        Additive("Assets/Resources/Fx/FxLine.mat", whiteTex, new Color(0.5f, 0.5f, 0.5f, 0.8f));
+        Additive("Assets/Resources/Fx/FxX.mat", crossTex, new Color(0.5f, 0.5f, 0.5f, 0.9f));
 
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -70,6 +72,7 @@ public static class PCGSceneBuilder
         GameObject legendary = BuildItem("Item_Legendary", "Legendary Gem", new Color(0.8f, 0.35f, 1f), 15, 1, ItemRarity.Legendary, true, 2.6f, BodyLegendary);
 
         GameObject exitPrefab = BuildExit();
+        GameObject obstaclePrefab = BuildObstaclePrefab(obstacleLayer);
 
         // ----- Generated root + manager
         GameObject generated = new GameObject("GeneratedObjects");
@@ -82,24 +85,38 @@ public static class PCGSceneBuilder
         so.FindProperty("generatedRoot").objectReferenceValue = generated.transform;
         so.FindProperty("obstacleMask").intValue = 1 << obstacleLayer;
         so.FindProperty("exitPrefab").objectReferenceValue = exitPrefab;
+        so.FindProperty("obstaclePrefab").objectReferenceValue = obstaclePrefab;
+
+        SerializedProperty fixedObstacles = so.FindProperty("fixedObstacles");
+        fixedObstacles.arraySize = 4;
+
+        for (int i = 0; i < 4; i++)
+        {
+            fixedObstacles.GetArrayElementAtIndex(i).objectReferenceValue = environment.transform.Find($"Obstacle_0{i + 1}").gameObject;
+        }
 
         SetEntries(so.FindProperty("enemyEntries"), new[]
         {
-            Entry("Common Red", red, 60),
-            Entry("Uncommon Blue", blue, 30),
-            Entry("Rare Yellow", yellow, 10),
-            Entry("Elite Green", green, 5),
+            Entry("Common Red", red, 60, new Color(1f, 0.25f, 0.3f)),
+            Entry("Uncommon Blue", blue, 30, new Color(0.25f, 0.55f, 1f)),
+            Entry("Rare Yellow", yellow, 10, new Color(1f, 0.85f, 0.2f)),
+            Entry("Elite Green", green, 5, new Color(0.25f, 1f, 0.5f)),
         });
 
         SetEntries(so.FindProperty("itemEntries"), new[]
         {
-            Entry("Common Coin", coin, 70),
-            Entry("Health Potion", health, 20),
-            Entry("Rare Crystal", rare, 8),
-            Entry("Legendary Gem", legendary, 2),
+            Entry("Common Coin", coin, 70, new Color(1f, 0.8f, 0.25f)),
+            Entry("Health Potion", health, 20, new Color(1f, 0.35f, 0.55f)),
+            Entry("Rare Crystal", rare, 8, new Color(0.35f, 0.92f, 1f)),
+            Entry("Legendary Gem", legendary, 2, new Color(0.8f, 0.4f, 1f)),
         });
 
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        GameObject overlayObject = new GameObject("PCGOverlay");
+        PCGOverlay overlay = overlayObject.AddComponent<PCGOverlay>();
+        SetRef(overlay, "spawner", spawner);
+        SetRef(overlay, "player", player.transform);
 
         // ----- Game systems
         GameObject systems = new GameObject("GameManager");
@@ -271,6 +288,18 @@ public static class PCGSceneBuilder
 
             return new Color(i, i, i, 1f);
         }), TextureWrapMode.Repeat, 8);
+
+        whiteTex = SaveTexture("T_White", Generate(8, 8, (u, v) => Color.white), TextureWrapMode.Clamp);
+
+        crossTex = SaveTexture("T_Cross", Generate(64, 64, (u, v) =>
+        {
+            float d1 = Mathf.Abs(u - v) * 0.7071f;
+            float d2 = Mathf.Abs(u + v - 1f) * 0.7071f;
+            float d = Mathf.Min(d1, d2);
+            float within = Mathf.Clamp01(1f - Mathf.Max(Mathf.Abs(u - 0.5f), Mathf.Abs(v - 0.5f)) * 2f / 0.78f);
+            float a = Mathf.Clamp01(1.2f - d / 0.055f) * Mathf.SmoothStep(0f, 1f, within * 6f);
+            return new Color(1f, 1f, 1f, a);
+        }), TextureWrapMode.Clamp);
 
         edgeTex = SaveTexture("T_Edge", Generate(128, 128, (u, v) =>
         {
@@ -794,6 +823,19 @@ public static class PCGSceneBuilder
         return SavePrefab(root, "Assets/Prefabs/Exit.prefab");
     }
 
+    private static GameObject BuildObstaclePrefab(int obstacleLayer)
+    {
+        Material metal = Lit("Obstacle", new Color(0.09f, 0.1f, 0.15f), CyanNeon * 1.9f, 0.7f, 0.5f, edgeTex);
+
+        // Collider dipertahankan: Physics.CheckSphere harus mendeteksi obstacle hasil generate.
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.name = "Obstacle";
+        cube.layer = obstacleLayer;
+        cube.GetComponent<Renderer>().sharedMaterial = metal;
+
+        return SavePrefab(cube, "Assets/Prefabs/Obstacle.prefab");
+    }
+
     private static GameObject SavePrefab(GameObject root, string path)
     {
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -816,7 +858,7 @@ public static class PCGSceneBuilder
         cam.transform.rotation = Quaternion.Euler(58f, 0f, 0f);
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.012f, 0.016f, 0.035f);
-        cam.fieldOfView = 48f;
+        cam.fieldOfView = 52f;
         cam.nearClipPlane = 0.3f;
         cam.farClipPlane = 140f;
         cam.allowHDR = true;
@@ -880,11 +922,12 @@ public static class PCGSceneBuilder
         public string name;
         public GameObject prefab;
         public int weight;
+        public Color color;
     }
 
-    private static EntryData Entry(string name, GameObject prefab, int weight)
+    private static EntryData Entry(string name, GameObject prefab, int weight, Color color)
     {
-        return new EntryData { name = name, prefab = prefab, weight = weight };
+        return new EntryData { name = name, prefab = prefab, weight = weight, color = color };
     }
 
     private static void SetEntries(SerializedProperty array, EntryData[] data)
@@ -898,6 +941,7 @@ public static class PCGSceneBuilder
             e.FindPropertyRelative("prefab").objectReferenceValue = data[i].prefab;
             e.FindPropertyRelative("weight").intValue = data[i].weight;
             e.FindPropertyRelative("yOffset").floatValue = 0f;
+            e.FindPropertyRelative("color").colorValue = data[i].color;
         }
     }
 }
