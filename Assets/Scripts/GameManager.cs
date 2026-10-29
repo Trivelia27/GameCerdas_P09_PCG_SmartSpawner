@@ -165,7 +165,8 @@ public class GameManager : MonoBehaviour
 
     private void GenerateLevel(bool play)
     {
-        spawner.EnemyCount = Mathf.Min(baseEnemyCount + (Level - 1) * enemyGrowthPerLevel, maxEnemies);
+        // Batas maxEnemies hanya membatasi pertumbuhan per level, bukan nilai yang diatur manual di panel.
+        spawner.EnemyCount = Mathf.Min(baseEnemyCount + (Level - 1) * enemyGrowthPerLevel, Mathf.Max(maxEnemies, baseEnemyCount));
         spawner.ItemCount = baseItemCount;
         spawner.GenerateWithSeed(LevelSeed);
 

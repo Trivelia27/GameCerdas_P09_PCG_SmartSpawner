@@ -10,15 +10,18 @@ using UnityEngine.UI;
 /// </summary>
 public class PCGDebugPanel : MonoBehaviour
 {
-    private static readonly string[] PresetNames = { "Default", "Merata", "Dominan Red", "Langka" };
+    private static readonly string[] PresetNames = { "Default", "Modul 60:30:10", "Merata", "Dominan Red", "Langka" };
 
     private static readonly int[][] PresetWeights =
     {
         new[] { 60, 30, 10, 5 },
+        new[] { 60, 30, 10, 0 },
         new[] { 33, 33, 34, 0 },
         new[] { 80, 15, 5, 0 },
         new[] { 10, 20, 70, 0 }
     };
+
+    private static readonly int[] PresetSeeds = { 100, 200, 300, 500, 12345 };
 
     private static readonly Color SafeColor = new Color(0.3f, 1f, 0.5f);
     private static readonly Color ObstacleColor = new Color(1f, 0.3f, 0.35f);
@@ -78,6 +81,30 @@ public class PCGDebugPanel : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (UIFactory.TextInputFocused())
+        {
+            return;
+        }
+
+        // F4: ganti mode obstacle (tetap / prosedural) lalu generate.
+        if (Input.GetKeyDown(KeyCode.F4))
+        {
+            SetObstacleMode(!spawner.ProceduralObstacles);
+            OnGenerate();
+        }
+
+        // Hotkey preset seed untuk eksperimen cepat.
+        for (int i = 0; i < PresetSeeds.Length; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.F5 + i))
+            {
+                gm.NewRun(PresetSeeds[i]);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ kontrol (kiri)
 
     private void BuildControls(RectTransform card)
@@ -92,6 +119,16 @@ public class PCGDebugPanel : MonoBehaviour
         AddButton(actions, "GENERATE  [R]", 19f, OnGenerate, new Color(0.1f, 0.5f, 0.62f), 1f, 44f);
         AddButton(actions, "SEED BARU  [N]", 19f, () => gm.NewRun(), new Color(0.38f, 0.2f, 0.55f), 1f, 44f);
 
+        Label(card, "PRESET SEED   (F5 - F9)");
+
+        RectTransform presets = Row(card, 34f);
+
+        foreach (int preset in PresetSeeds)
+        {
+            int value = preset;
+            AddButton(presets, value.ToString(), 16f, () => gm.NewRun(value), new Color(0.12f, 0.3f, 0.4f), 1f, 34f);
+        }
+
         Label(card, "LAYER PCG");
 
         RectTransform modes = Row(card, 40f);
@@ -100,7 +137,7 @@ public class PCGDebugPanel : MonoBehaviour
 
         Label(card, "PARAMETER");
 
-        enemySlider = AddSlider(card, "Enemy", 0f, 40f, true, v => $"{v:0}", out enemyValue, OnCountsChanged);
+        enemySlider = AddSlider(card, "Enemy", 0f, 60f, true, v => $"{v:0}", out enemyValue, OnCountsChanged);
         itemSlider = AddSlider(card, "Item", 0f, 25f, true, v => $"{v:0}", out itemValue, OnCountsChanged);
         obstacleSlider = AddSlider(card, "Obstacle", 0f, 14f, true, v => $"{v:0}", out obstacleValue, v => spawner.ObstacleCount = Mathf.RoundToInt(v));
         safeSlider = AddSlider(card, "Safe radius", 0f, 10f, false, v => $"{v:0.0}", out safeValue, v => spawner.MinDistanceFromPlayer = Mathf.Round(v * 2f) / 2f);

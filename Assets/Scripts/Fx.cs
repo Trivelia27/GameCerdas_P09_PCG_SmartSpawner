@@ -126,7 +126,10 @@ public static class Fx
         ParticleSystem.VelocityOverLifetimeModule velocity = ps.velocityOverLifetime;
         velocity.enabled = true;
         velocity.space = ParticleSystemSimulationSpace.World;
+        // Unity mewajibkan x, y, z memakai mode kurva yang sama (di sini semuanya two constants).
+        velocity.x = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
         velocity.y = new ParticleSystem.MinMaxCurve(0.1f, 0.4f);
+        velocity.z = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
 
         ParticleSystem.ColorOverLifetimeModule col = ps.colorOverLifetime;
         col.enabled = true;

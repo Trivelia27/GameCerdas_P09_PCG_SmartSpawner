@@ -9,6 +9,8 @@ Unity 6000.0.83f1 · URP · scene `Assets/Scenes/PCG_SpawnArena`
 | SPACE / Shift | Dash (kebal sesaat, **menghancurkan enemy** yang tertabrak) |
 | R | Restart level (seed sama → layout sama) |
 | N | Seed acak baru |
+| F5–F9 | Preset seed 100 / 200 / 300 / 500 / 12345 |
+| F4 | Ganti mode obstacle (tetap ⇄ prosedural) lalu generate |
 | TAB | Mode fokus: sembunyikan/tampilkan panel lab |
 | F2 | Autopilot (bot AI untuk demo) |
 | P / Esc | Pause · M mute |
@@ -48,3 +50,7 @@ Semua: wander saat idle, menghindari obstacle, dan saling menjauh (separation).
 
 ## Menu Editor
 `Tools > GameCerdas P09`: Build Scene · Run Experiments · Open And Play · Open And Play (Autopilot).
+
+## Materi demo
+`DemoVideo/Naskah_Demo_P09.md` (naskah dan aksi layar, ±9:45) dan `DemoVideo/Panduan_Eksperimen_P09.md`
+(setting tiap eksperimen, angka yang akan muncul, dan cara menjelaskannya).

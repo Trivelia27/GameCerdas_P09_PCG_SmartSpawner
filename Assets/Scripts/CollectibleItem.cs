@@ -46,7 +46,8 @@ public class CollectibleItem : MonoBehaviour
     private void Awake()
     {
         pop = GetComponent<SpawnPop>();
-        bobOffset = Random.value * 10f;
+        // Jangan memakai Random global di Awake: Awake berjalan saat Instantiate di tengah generation PCG.
+        bobOffset = (GetInstanceID() & 0xFFFF) * 0.0007f;
 
         if (visual != null)
         {

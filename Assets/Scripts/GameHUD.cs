@@ -374,28 +374,42 @@ public class GameHUD : MonoBehaviour
         titlePanel = UIFactory.Node(view.transform, "TitlePanel");
         UIFactory.Stretch(titlePanel);
 
-        Image dim = UIFactory.MakeImage(titlePanel, "Dim", new Color(0.01f, 0.02f, 0.05f, 0.55f));
-        UIFactory.Stretch(dim.rectTransform);
+        // Dua pita (atas dan bawah) agar bagian tengah arena tetap bebas untuk melihat hasil generation.
+        Color bandColor = new Color(0.01f, 0.02f, 0.05f, 0.62f);
 
-        TextMeshProUGUI title = UIFactory.MakeText(titlePanel, "SMART SPAWNER", 72f, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-        UIFactory.Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(940f, 110f));
+        Image topBand = UIFactory.MakeImage(titlePanel, "TopBand", bandColor);
+        topBand.rectTransform.anchorMin = new Vector2(0f, 1f);
+        topBand.rectTransform.anchorMax = new Vector2(1f, 1f);
+        topBand.rectTransform.pivot = new Vector2(0.5f, 1f);
+        topBand.rectTransform.offsetMin = new Vector2(0f, -150f);
+        topBand.rectTransform.offsetMax = Vector2.zero;
+
+        Image bottomBand = UIFactory.MakeImage(titlePanel, "BottomBand", bandColor);
+        bottomBand.rectTransform.anchorMin = new Vector2(0f, 0f);
+        bottomBand.rectTransform.anchorMax = new Vector2(1f, 0f);
+        bottomBand.rectTransform.pivot = new Vector2(0.5f, 0f);
+        bottomBand.rectTransform.offsetMin = Vector2.zero;
+        bottomBand.rectTransform.offsetMax = new Vector2(0f, 200f);
+
+        TextMeshProUGUI title = UIFactory.MakeText(titlePanel, "SMART SPAWNER", 64f, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+        UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -14f), new Vector2(940f, 84f));
         title.characterSpacing = 10f;
 
-        TextMeshProUGUI subtitle = UIFactory.MakeText(titlePanel, "PROCEDURAL CONTENT GENERATION", 22f, UIFactory.Cyan, TextAlignmentOptions.Center, FontStyles.Bold);
-        UIFactory.Place(subtitle.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 98f), new Vector2(940f, 32f));
+        TextMeshProUGUI subtitle = UIFactory.MakeText(titlePanel, "PROCEDURAL CONTENT GENERATION", 20f, UIFactory.Cyan, TextAlignmentOptions.Center, FontStyles.Bold);
+        UIFactory.Place(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -102f), new Vector2(940f, 30f));
         subtitle.characterSpacing = 8f;
 
         TextMeshProUGUI mission = UIFactory.MakeText(titlePanel,
             "Setiap arena dibangun oleh algoritma PCG: <b>seed</b>, <b>weighted random</b>, dan <b>validasi posisi</b>.\n" +
             "Kumpulkan item bercahaya, hindari atau <b>dash</b> menembus enemy, lalu capai <b>EXIT</b>.",
-            22f, new Color(0.85f, 0.92f, 1f), TextAlignmentOptions.Center, FontStyles.Normal, true);
-        UIFactory.Place(mission.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(820f, 90f));
+            19f, new Color(0.85f, 0.92f, 1f), TextAlignmentOptions.Center, FontStyles.Normal, true);
+        UIFactory.Place(mission.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 118f), new Vector2(860f, 64f));
 
-        Button start = UIFactory.MakeButton(titlePanel, "START  [ENTER]", 28f, () => gm.StartGame(), new Color(0.1f, 0.55f, 0.65f));
-        UIFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -80f), new Vector2(360f, 74f));
+        Button start = UIFactory.MakeButton(titlePanel, "START  [ENTER]", 26f, () => gm.StartGame(), new Color(0.1f, 0.55f, 0.65f));
+        UIFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 44f), new Vector2(340f, 62f));
 
-        titleSeedText = UIFactory.MakeText(titlePanel, "", 20f, UIFactory.Dim, TextAlignmentOptions.Center);
-        UIFactory.Place(titleSeedText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), new Vector2(900f, 30f));
+        titleSeedText = UIFactory.MakeText(titlePanel, "", 18f, UIFactory.Dim, TextAlignmentOptions.Center);
+        UIFactory.Place(titleSeedText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 10f), new Vector2(900f, 26f));
     }
 
     private void BuildLevelComplete()

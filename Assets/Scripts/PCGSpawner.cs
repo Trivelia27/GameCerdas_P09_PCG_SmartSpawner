@@ -471,6 +471,10 @@ public class PCGSpawner : MonoBehaviour
 
                 if (instantiateObjects)
                 {
+                    // Awake/Start komponen prefab (partikel, audio, dll) tidak boleh menggeser urutan Random PCG,
+                    // supaya hasil di game sama dengan simulasi eksperimen untuk seed yang sama.
+                    Random.State state = Random.state;
+
                     GameObject spawnedObject = Instantiate(
                         selected.prefab,
                         spawnPosition,
@@ -480,6 +484,8 @@ public class PCGSpawner : MonoBehaviour
 
                     spawnedObject.name = $"{selected.prefab.name}_Generated_{i}";
                     PlayPop(spawnedObject);
+
+                    Random.state = state;
                 }
 
                 usedPositions.Add(candidate);

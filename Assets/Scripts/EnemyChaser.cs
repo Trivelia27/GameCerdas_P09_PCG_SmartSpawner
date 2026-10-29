@@ -98,7 +98,8 @@ public class EnemyChaser : MonoBehaviour
     {
         pop = GetComponent<SpawnPop>();
         health = maxHealth;
-        bobOffset = Random.value * 10f;
+        // Jangan memakai Random global di Awake: Awake berjalan saat Instantiate di tengah generation PCG.
+        bobOffset = (GetInstanceID() & 0xFFFF) * 0.0007f;
 
         if (visual != null)
         {
@@ -132,7 +133,15 @@ public class EnemyChaser : MonoBehaviour
             return;
         }
 
-        GameState state = GameManager.Instance.State;
+        GameManager gm = GameManager.Instance;
+
+        // Saat Play dihentikan, Instance bisa sudah null sementara enemy masih sempat ter-update.
+        if (gm == null)
+        {
+            return;
+        }
+
+        GameState state = gm.State;
 
         if (state != GameState.Playing && state != GameState.Title)
         {
